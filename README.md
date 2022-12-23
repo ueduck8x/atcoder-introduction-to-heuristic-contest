@@ -16,7 +16,7 @@
 1. [VSCode拡張機能```Remote-Containers```のインストール](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
 1. 本リポジトリのclone
     ```
-    git clone https://github.com/hrt0809/atcoder-myenv
+    git clone https://github.com/ueduck/atcoder-myenv
     ```
 
 
