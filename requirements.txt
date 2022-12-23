@@ -1,6 +1,6 @@
 # linter
 black==22.6.0
-isort==5.10.1
+isort==5.11.4
 
 # atcoder submit
 online-judge-tools==11.5.1
