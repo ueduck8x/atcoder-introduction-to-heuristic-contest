@@ -25,20 +25,18 @@ class Evaluator:  # スケジュール評価機能
     def __init__(self, env: Environment) -> None:
         self.env = env
 
-    def calculate_satisfaction(self, schedule: Schedule) -> int:
+    def evaluate(self, schedule: Schedule) -> int:
         last_dates = {i: 0 for i in range(1, self.env.num_contests + 1)}
         total_satisfaction = 0
-        for d in range(1, len(schedule) + 1):
-            satisfaction = 0
+        for d in range(1, self.env.span + 1):
             hold_contest_id = schedule[d]
             # 最後のコンテスト開催日を更新する
             last_dates[hold_contest_id] = d
             # 開かれなかったコンテストによる満足度の低下を計算する
             for i in range(1, self.env.num_contests + 1):
-                satisfaction -= (d - last_dates[i]) * self.env.params_c[i]
+                total_satisfaction -= (d - last_dates[i]) * self.env.params_c[i]
             # 開かれたコンテストによる満足度の増加を足す
-            satisfaction += self.env.params_s[d, hold_contest_id]
-            total_satisfaction += satisfaction
+            total_satisfaction += self.env.params_s[d, hold_contest_id]
         return total_satisfaction
 
 
@@ -50,10 +48,7 @@ class Schedule:
         self.satisfaction: int = 0
         # 貪欲法によるスケジュールを求めておく
         self.generate_greedy_schedule()
-        self.get_satisfaction()
-
-    def __len__(self) -> int:
-        return len(self.schedule)
+        self.evaluate()
 
     def __getitem__(self, date: int) -> int:
         return self.schedule[date]
@@ -61,6 +56,16 @@ class Schedule:
     def print_schedule(self) -> None:
         for d in range(1, self.env.span + 1):
             print(self.schedule[d])
+
+    def evaluate(self) -> None:
+        self.satisfaction = self.evaluator.evaluate(self)
+
+    def get_satisfaction(self) -> int:
+        self.evaluate()
+        return self.satisfaction
+
+    def overwrite(self, date: int, contest: int) -> None:
+        self.schedule[date] = contest
 
     def generate_greedy_schedule(self) -> None:  # 貪欲法によるスケジュール生成
         last_dates = {i: 0 for i in range(1, self.env.num_contests + 1)}
@@ -79,23 +84,14 @@ class Schedule:
             last_dates[best_contest_id] = d
             self.schedule[d] = best_contest_id
 
-    def get_satisfaction(self) -> int:
-        self.satisfaction = self.evaluator.calculate_satisfaction(self)
-        return self.satisfaction
-
-    def set_contest(self, date: int, contest: int) -> None:
-        self.schedule[date] = contest
-
 
 class Neighborhood(metaclass=abc.ABCMeta):
     def __init__(self, env: Environment) -> None:
         self.env = env
         self.schedule: Schedule
-        self.satisfaction: int
 
     def set_schedule(self, schedule: Schedule) -> None:
         self.schedule = schedule
-        self.satisfaction = self.schedule.satisfaction
 
     @abc.abstractmethod
     def execute(self) -> None:
@@ -109,7 +105,7 @@ class Neighborhood(metaclass=abc.ABCMeta):
         return self.schedule.get_satisfaction()
 
 
-class SingleContestExchange(Neighborhood):
+class SingleContestExchanger(Neighborhood):
     def __init__(self, env: Environment) -> None:
         super().__init__(env)
         self.decided_date: int
@@ -120,36 +116,34 @@ class SingleContestExchange(Neighborhood):
         self.decided_date = random.randint(1, self.env.span)
         self.decided_contest = random.randint(1, self.env.num_contests)
         self.original_contest = self.schedule[self.decided_date]
-        self.schedule.set_contest(self.decided_date, self.decided_contest)
+        self.schedule.overwrite(self.decided_date, self.decided_contest)
 
     def rollback(self) -> None:
-        self.schedule.set_contest(self.decided_date, self.original_contest)
+        self.schedule.overwrite(self.decided_date, self.original_contest)
 
 
 def hill_climbing(env: Environment, schedule: Schedule) -> Schedule:
-    TIME_LIMIT = 1.75
+    TIME_LIMIT = 1.8
 
+    cnt: int = 1
     start_time = time.perf_counter()
     calculation_time = 0.0
-    cnt: int = 1
-    best_score: int = schedule.satisfaction
     best_schedule: Schedule = schedule
-    neighbor = SingleContestExchange(env)
+    best_satisfaction: int = schedule.get_satisfaction()
+    neighbor = SingleContestExchanger(env)  # 近傍の生成方法を固定
     while True:
         if cnt % 30 == 0:
             calculation_time = time.perf_counter() - start_time
         if calculation_time > TIME_LIMIT:
-            # print(calculation_time)
             break
         neighbor.set_schedule(best_schedule)
-        neighbor.execute()
-        score = neighbor.get_satisfaction()
-        if score > best_score:
-            # print(f"exchanged!")
-            best_score = score
+        neighbor.execute()  # 近傍解生成
+        satisfaction = neighbor.get_satisfaction()
+        if satisfaction > best_satisfaction:  # 近傍解が元の解より良ければ受容する
+            best_satisfaction = satisfaction
             best_schedule = neighbor.schedule
         else:
-            neighbor.rollback()
+            neighbor.rollback()  # 近傍解が悪い場合は元のスケジュールに戻す
         cnt += 1
     return best_schedule
 
@@ -171,7 +165,7 @@ def main():
 
     env = Environment(SPAN, num_contests, params_c, params_s)  # 問題環境の構築
     init_schedule = Schedule(env)  # 初期スケジュール生成
-    best_schedule = hill_climbing(env, init_schedule)
+    best_schedule = hill_climbing(env, init_schedule)  # 山登り法による探索
     best_schedule.print_schedule()  # スケジュール表示
 
 
