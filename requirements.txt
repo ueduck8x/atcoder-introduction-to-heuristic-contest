@@ -9,5 +9,5 @@ online-judge-tools==11.5.1
 numpy==1.18.2
 scipy==1.4.1
 scikit-learn==0.22.2.post1
-numba==0.48.0
+numba==0.56.4
 networkx==2.4
