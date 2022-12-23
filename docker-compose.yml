@@ -1,6 +1,6 @@
 version: "3"
 services:
-  atcoder-myenv:
+  atcoder-introduction-to-heuristic-contest:
     build:
       context: .
       dockerfile: .devcontainer/Dockerfile
@@ -9,5 +9,5 @@ services:
     volumes:
       - .:/project
       - ${USERPROFILE-~}/.ssh:/home/vscode/.ssh
-    container_name: atcoder-myenv
+    container_name: atcoder-introduction-to-heuristic-contest
     tty: true
