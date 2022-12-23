@@ -1,0 +1,13 @@
+version: "3"
+services:
+  atcoder-myenv:
+    build:
+      context: .
+      dockerfile: .devcontainer/Dockerfile
+      args:
+        WORKDIR: /project/src
+    volumes:
+      - .:/project
+      - ${USERPROFILE-~}/.ssh:/home/vscode/.ssh
+    container_name: atcoder-myenv
+    tty: true
