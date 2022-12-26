@@ -6,7 +6,7 @@ isort==5.10.1
 online-judge-tools==11.5.1
 
 # library
-numpy==1.18.2
+numpy==1.24.1
 scipy==1.4.1
 scikit-learn==0.22.2.post1
 numba==0.48.0
